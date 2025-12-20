@@ -25,6 +25,31 @@
     </section>
 
     <section class="card">
+  <h2>Add reminder</h2>
+
+  <!-- Smart add -->
+  <div class="grid" style="grid-template-columns: 1fr auto;">
+    <input id="smartText" type="text" placeholder='e.g., "Doctor tomorrow 5pm" or "Submit report on Jan 10"' />
+    <button id="smartAddBtn">Smart Add</button>
+  </div>
+
+  <div style="height: 10px;"></div>
+
+  <!-- Manual add (fallback) -->
+  <div class="grid">
+    <input id="title" type="text" placeholder="e.g., Submit report" />
+    <input id="date" type="date" />
+    <input id="time" type="time" />
+    <button id="addBtn">Add</button>
+  </div>
+
+  <p class="hint">
+    Smart Add detects date/time from text. Manual add is a fallback. Time defaults to 09:00 if not provided.
+  </p>
+</section>
+
+
+    <section class="card">
       <h2>Tomorrow</h2>
       <ul id="tomorrowList" class="list"></ul>
       <p id="tomorrowEmpty" class="muted">No reminders for tomorrow.</p>

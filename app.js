@@ -1,5 +1,6 @@
 // app.js (ES modules)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import chrono from "https://esm.sh/chrono-node@2";
 import {
   getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
@@ -33,6 +34,8 @@ const allList = document.getElementById("allList");
 const tomorrowEmpty = document.getElementById("tomorrowEmpty");
 const allEmpty = document.getElementById("allEmpty");
 const statusEl = document.getElementById("status");
+const smartTextEl = document.getElementById("smartText");
+const smartAddBtn = document.getElementById("smartAddBtn");
 
 // 4) “Login later” hook: keep userId field from day 1
 // For now we keep userId null. When you add Auth later, set it to auth.currentUser.uid.
@@ -48,6 +51,31 @@ function localDateKey(dateObj) {
   const d = pad2(dateObj.getDate());
   return `${y}-${m}-${d}`;
 }
+
+function defaultTimeIfMissing(dateObj) {
+  // If user only typed a date, chrono may set some default time;
+  // we normalize to 09:00 when time is missing/uncertain.
+  const d = new Date(dateObj);
+  if (d.getHours() === 0 && d.getMinutes() === 0) {
+    d.setHours(9, 0, 0, 0);
+  }
+  return d;
+}
+
+function extractTitleFromChronoResult(text, result) {
+  // Remove the date phrase from the sentence to make a cleaner title.
+  // Example: "Doctor tomorrow 5pm" -> "Doctor"
+  // If it becomes empty, fallback to full text.
+  try {
+    const start = result.index;
+    const end = result.index + result.text.length;
+    const cleaned = (text.slice(0, start) + " " + text.slice(end)).replace(/\s+/g, " ").trim();
+    return cleaned || text.trim();
+  } catch {
+    return text.trim();
+  }
+}
+
 
 function parseDueAt(dateStr, timeStr) {
   // dateStr like "2025-12-19"
@@ -190,6 +218,34 @@ async function refresh() {
 }
 
 // 8) Events
+
+smartAddBtn.onclick = async () => {
+  const raw = (smartTextEl.value || "").trim();
+  if (!raw) return alert("Type something like: Doctor tomorrow 5pm");
+
+  // Parse with chrono (uses user's local timezone in browser)
+  const results = chrono.parse(raw);
+
+  if (!results || results.length === 0) {
+    return alert("I couldn't find a date/time in that text. Try adding a date like 'tomorrow' or 'Jan 10'.");
+  }
+
+  // Use the first detected date/time
+  const first = results[0];
+  const parsedDate = first.start?.date?.();
+  if (!parsedDate || isNaN(parsedDate.getTime())) {
+    return alert("Date parsing failed. Try a different phrasing.");
+  }
+
+  const dueAt = defaultTimeIfMissing(parsedDate);
+  const title = extractTitleFromChronoResult(raw, first);
+
+  setStatus("Saving…");
+  await createReminder({ title, dueAt });
+  smartTextEl.value = "";
+  await refresh();
+};
+
 addBtn.onclick = async () => {
   const title = (titleEl.value || "").trim();
   const dateStr = dateEl.value;
