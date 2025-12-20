@@ -1,6 +1,7 @@
 // app.js (ES modules)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-import chrono from "https://esm.sh/chrono-node@2";
+import * as chrono from "https://esm.sh/chrono-node@2";
+
 import {
   getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
