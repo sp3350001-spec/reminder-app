@@ -5,13 +5,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
 // 1) Paste your Firebase config here:
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  // apiKey: "...",
-  // authDomain: "...",
-  // projectId: "...",
-  // storageBucket: "...",
-  // messagingSenderId: "...",
-  // appId: "..."
+  apiKey: "AIzaSyDujNqbao5upw0CGQ4u7Y1Kem4j9oT8VCk",
+  authDomain: "reminder-2b619.firebaseapp.com",
+  projectId: "reminder-2b619",
+  storageBucket: "reminder-2b619.firebasestorage.app",
+  messagingSenderId: "1077496509854",
+  appId: "1:1077496509854:web:a12377f99702c1eda8528f",
+  measurementId: "G-ES4Q5KTWDN"
 };
 
 // 2) Init Firebase
