@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Reminders</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Reminders</h1>
+      <p class="sub">Add reminders in any order. — they’ll auto-sort. Tomorrow gets a heads-up.</p>
+    </header>
+
+    <section class="card">
+      <h2>Add reminder</h2>
+      <div class="grid">
+        <input id="title" type="text" placeholder="e.g., Submit report" />
+        <input id="date" type="date" />
+        <input id="time" type="time" />
+        <button id="addBtn">Add</button>
+      </div>
+      <p class="hint">Tip: Date is required. Time is optional (defaults to 09:00).</p>
+    </section>
+
+    <section class="card">
+      <h2>Tomorrow</h2>
+      <ul id="tomorrowList" class="list"></ul>
+      <p id="tomorrowEmpty" class="muted">No reminders for tomorrow.</p>
+    </section>
+
+    <section class="card">
+      <h2>Upcoming</h2>
+      <div class="row">
+        <label class="row">
+          <input type="checkbox" id="showDone" />
+          Show completed
+        </label>
+        <button id="refreshBtn" class="ghost">Refresh</button>
+      </div>
+
+      <ul id="allList" class="list"></ul>
+      <p id="allEmpty" class="muted">No reminders yet.</p>
+    </section>
+
+    <footer class="footer">
+      <span id="status" class="muted"></span>
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
