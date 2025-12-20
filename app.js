@@ -77,6 +77,56 @@ function extractTitleFromChronoResult(text, result) {
   }
 }
 
+function hasExplicitDate(chronoResult) {
+  // If user explicitly typed a day/month/year (e.g., "Dec 25", "tomorrow", "next Friday"),
+  // chrono marks date parts as certain. If they typed only "3pm", date parts are not certain.
+  const s = chronoResult.start;
+  return s.isCertain("day") || s.isCertain("month") || s.isCertain("year");
+}
+
+function combineDateAndTime(baseDate, timeDate) {
+  // baseDate provides Y/M/D, timeDate provides H/M
+  const d = new Date(baseDate);
+  d.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
+  return d;
+}
+
+function nextOccurrenceIfPast(d) {
+  // If scheduled time is earlier than now, push to tomorrow
+  const now = new Date();
+  const out = new Date(d);
+  if (out.getTime() <= now.getTime()) {
+    out.setDate(out.getDate() + 1);
+  }
+  return out;
+}
+
+function extractTitleForResult(fullText, results, i) {
+  // Split text into chunks between detected date/time phrases.
+  // Title = chunk around the i-th detected phrase, with the phrase removed.
+  const r = results[i];
+  const start = r.index;
+  const end = r.index + r.text.length;
+
+  const chunkStart = i === 0 ? 0 : (results[i - 1].index + results[i - 1].text.length);
+  const chunkEnd = i === results.length - 1 ? fullText.length : results[i + 1].index;
+
+  const chunk = fullText.slice(chunkStart, chunkEnd).trim();
+
+  // Remove the date phrase inside that chunk
+  const relativeStart = start - chunkStart;
+  const relativeEnd = relativeStart + r.text.length;
+
+  const cleaned =
+    (chunk.slice(0, relativeStart) + " " + chunk.slice(relativeEnd))
+      .replace(/\s+/g, " ")
+      .trim();
+
+  // Tidy common connectors
+  const nicer = cleaned.replace(/^(and then|then|and)\s+/i, "").trim();
+
+  return nicer || chunk || fullText.trim();
+}
 
 function parseDueAt(dateStr, timeStr) {
   // dateStr like "2025-12-19"
@@ -222,30 +272,49 @@ async function refresh() {
 
 smartAddBtn.onclick = async () => {
   const raw = (smartTextEl.value || "").trim();
-  if (!raw) return alert("Type something like: Doctor tomorrow 5pm");
+  if (!raw) return alert('Type like: "Amayra class at 11am and eye appointment at 3pm"');
 
-  // Parse with chrono (uses user's local timezone in browser)
   const results = chrono.parse(raw);
-
   if (!results || results.length === 0) {
-    return alert("I couldn't find a date/time in that text. Try adding a date like 'tomorrow' or 'Jan 10'.");
+    return alert("I couldn't find a time/date in that text. Try adding 'tomorrow', 'next Friday', or a time like '3pm'.");
   }
 
-  // Use the first detected date/time
-  const first = results[0];
-  const parsedDate = first.start?.date?.();
-  if (!parsedDate || isNaN(parsedDate.getTime())) {
-    return alert("Date parsing failed. Try a different phrasing.");
-  }
-
-  const dueAt = defaultTimeIfMissing(parsedDate);
-  const title = extractTitleFromChronoResult(raw, first);
+  // OPTIONAL: if user selected a date in the manual picker, use it as base date for time-only inputs
+  const baseFromPicker = dateEl?.value ? parseDueAt(dateEl.value, "09:00") : null; // uses your existing parseDueAt()
 
   setStatus("Saving…");
-  await createReminder({ title, dueAt });
+
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    const parsed = r.start?.date?.();
+    if (!parsed || isNaN(parsed.getTime())) continue;
+
+    let dueAt;
+
+    if (hasExplicitDate(r)) {
+      // User gave a real date context (tomorrow/next Friday/Dec 25/etc.)
+      dueAt = parsed;
+    } else {
+      // Time-only (e.g., "11am") → choose a base date
+      const baseDate = baseFromPicker || new Date(); // today if no picker date chosen
+      dueAt = combineDateAndTime(baseDate, parsed);
+      dueAt = nextOccurrenceIfPast(dueAt); // if time already passed, move to tomorrow
+    }
+
+    // If chrono gave 00:00 (rare here), you can default to 9:00
+    if (dueAt.getHours() === 0 && dueAt.getMinutes() === 0) {
+      dueAt.setHours(9, 0, 0, 0);
+    }
+
+    const title = extractTitleForResult(raw, results, i);
+    await createReminder({ title, dueAt });
+  }
+
   smartTextEl.value = "";
   await refresh();
+  setStatus("Ready.");
 };
+
 
 addBtn.onclick = async () => {
   const title = (titleEl.value || "").trim();
